@@ -17,7 +17,7 @@ I try to fit this data set with multiple models to solve its nature of being cla
 clustering. 
 
 
-###models trial to fit
+### models trial to fit
 
 I tried K-means clustering which I reach result of number of clustering of 13. 
 
