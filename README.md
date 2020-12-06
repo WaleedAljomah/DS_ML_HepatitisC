@@ -1,4 +1,4 @@
-## Hepatitis prediction of liver cirrhosis and fibrosis
+##  Prediction of liver cirrhosis and fibrosis 
 
 this a data set from 
 http://archive.ics.uci.edu/ml/datasets/HCV+data
@@ -10,6 +10,7 @@ laboratory testing.
 
 the publication of the study 
 http://jlpm.amegroups.com/article/view/4401
+
 
 This data set is a Multivariate with supervised learning with Classification and clustering problem
 
