@@ -1,0 +1,76 @@
+---
+title: "HCV-Decision Trees"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+```{r }
+# Helper packages
+library(dplyr)       # for data wrangling
+library(ggplot2)     # for awesome plotting
+
+# Modeling packages
+library(rpart)       # direct engine for decision tree application
+library(caret)       # meta engine for decision tree application
+library(rsample)
+# Model interpretability packages
+library(rpart.plot)  # for plotting decision trees
+library(vip)         # for feature importance
+library(pdp)         # for feature effects
+```
+
+
+
+```{r}
+#import data
+hcv_data <- read.csv("data/hcvdat0.csv")
+```
+
+##Feature engeneering :
+
+- there is a missing values which should be dealted for the puropse of modeling
+```{r}
+#dealing with missing
+
+HCV_omitted <- na.omit(hcv_data)
+HCV_omitted 
+```
+- the category "0s=suspect Blood Donor" is not informative. So, deleting this row is better for the prediction
+```{r}
+HCV <- subset(HCV_omitted, Category!= "0s=suspect Blood Donor")
+HCV
+```
+
+
+
+```{r }
+set.seed(123)
+split <- initial_split(HCV, strata = "Category")
+HCV_train <- training(split)
+HCV_test <- testing(split)
+
+```
+
+
+```{r}
+HCV_dt <- train(
+ Category ~ .,
+ data = HCV_train,
+ method = "rpart",
+ trControl = trainControl(method = "cv", number = 10),
+ tuneLength = 30
+)
+```
+
+
+```{r}
+#plotting decision trees model result
+ggplot(HCV_dt)
+```
+

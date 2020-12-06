@@ -1,0 +1,134 @@
+---
+title: "HCV predection with K-means Clustering"
+Auther: Waleed ALjomah
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r }
+# Helper packages
+library(dplyr)       # for data manipulation
+library(ggplot2)     # for data visualization
+library(stringr)     # for string functionality
+
+# Modeling packages
+library(cluster)     # for general clustering algorithms
+library(factoextra)  # for visualizing cluster results
+```
+
+
+
+###data : http://archive.ics.uci.edu/ml/datasets/HCV+data
+###publication : https://www.researchgate.net/profile/Georg_Hoffmann4/publication/326151919_Using_machine_learning_techniques_to_generate_laboratory_diagnostic_pathways-a_case_study/links/5b3e3e5b0f7e9b0df5f58d31/Using-machine-learning-techniques-to-generate-laboratory-diagnostic-pathways-a-case-study.pdf
+
+The data set contains laboratory values of blood donors and Hepatitis C patients
+and demographic values like age.
+
+```{r }
+#import data
+HCV <- read.csv("data/hcvdat0.csv")
+```
+
+This data set is a Multivariate with supervised learning with Classification and clustering problem
+
+```{r}
+#Explore data
+
+head(HCV)
+
+summary(HCV)
+```
+
+All attributes except Category and Sex are numerical. The laboratory data are the attributes 5-14.
+1) X (Patient ID/No.)
+2) Category (diagnosis) (values: '0=Blood Donor', '0s=suspect Blood Donor', '1=Hepatitis', '2=Fibrosis', '3=Cirrhosis')
+3) Age (in years)
+4) Sex (f,m)
+5) ALB
+6) ALP
+7) ALT
+8) AST
+9) BIL
+10) CHE
+11) CHOL
+12) CREA
+13) GGT
+14) PROT
+
+##Feature engeneering :
+
+- there is a missing values which should be deleted for the purpose of modeling
+
+##distribution of missing values in a data
+```{r}
+#visualising missing
+
+HCV %>%
+ is.na() %>%
+ reshape2::melt() %>%
+ ggplot(aes(Var2, Var1, fill=value)) +
+ geom_raster() +
+ coord_flip() +
+ scale_y_continuous(NULL, expand = c(0, 0)) +
+ scale_fill_grey(name = "",
+                 labels = c("Present",
+                            "Missing")) +
+ xlab("Observation") +
+ theme(axis.text.y  = element_text(size = 4))
+```
+
+- missing values mainly in "ALP" and "CHOL" 
+
+
+```{r}
+#dealing with missing
+
+HepC <- na.omit(HCV)
+HepC
+```
+
+### to convert any ordinal categorical variables to numeric and one-hot encode the remaining nominal categorical variables.
+```{r}
+
+
+# One-hot encode --> retain only the features and not "Category"
+full_rank  <- caret::dummyVars(Category ~ ., data = HepC, 
+                               fullRank = TRUE)
+HepC_1hot <- predict(full_rank, HepC)
+
+# Scale data
+HepC_1hot_scaled <- scale(HepC_1hot)
+
+# New dimensions
+dim(HepC_1hot_scaled)
+
+```
+### determining how many cluster to apply by using  "elbow method"
+by computing k-means clustering for different values of k, then plotting the curve of WSS and determing the location of a bend (i.e. elbow) which is an indicator of the appropriate number of clusters.
+
+```{r}
+set.seed(123)
+
+HepC_clustering <- fviz_nbclust(
+  HepC_1hot_scaled, 
+  kmeans, 
+  method = "wss", #within-cluster sum of squares
+  k.max = 25, 
+  verbose = FALSE
+)
+
+HepC_clustering
+```
+
+
+number of clustering 12 or 13 may be the best fit for this model.
+
+
+
+
+
+

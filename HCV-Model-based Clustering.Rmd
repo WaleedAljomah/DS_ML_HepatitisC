@@ -1,0 +1,139 @@
+---
+title: "Hepatitis C virus predection with Model-based Clustering"
+Auther: Waleed ALjomah
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Applying Gaussian mixture models
+which provide soft assignment where observations have a probability of belonging to each cluster,
+and deal with uncertainty to the cluster assignments.
+
+```{r }
+# Helper packages
+library(tidyverse)    # for data manipulation
+library(ggplot2)  # for data visualization
+
+
+# Modeling packages
+library(mclust)   # for fitting clustering algorithms
+```
+
+
+
+```{r }
+
+#import data
+HCV <- read.csv("data/hcvdat0.csv")
+```
+
+```{r}
+#Explore data
+
+head(HCV)
+
+summary(HCV)
+```
+
+```{r}
+#visualising missing
+
+HCV %>%
+ is.na() %>%
+ reshape2::melt() %>%
+ ggplot(aes(Var2, Var1, fill=value)) +
+ geom_raster() +
+ coord_flip() +
+ scale_y_continuous(NULL, expand = c(0, 0)) +
+ scale_fill_grey(name = "",
+                 labels = c("Present",
+                            "Missing")) +
+ xlab("Observation") +
+ theme(axis.text.y  = element_text(size = 4))
+```
+```{r}
+#dealing with missing
+
+HepC <- na.omit(HCV)
+HepC
+```
+
+```{r}
+# Apply GMM model 
+HepC_mc <- Mclust(HepC, 1:20)
+
+# Plot results
+plot(HepC_mc, what = "density")
+plot(HepC_mc, what = "uncertainty")
+```
+
+
+```{r}
+# Observations with high uncertainty
+sort(HepC_mc$uncertainty, decreasing = TRUE) %>% head()
+```
+
+
+
+
+```{r}
+summary(HepC_mc, parameters = TRUE)
+```
+
+```{r}
+plot(HepC_mc, what = 'BIC', 
+     legendArgs = list(x = "bottomright", ncol = 5))
+```
+
+```{r}
+probabilities <- HepC_mc$z 
+colnames(probabilities) <- paste0('C', 1:2)
+
+probabilities <- probabilities %>%
+  as.data.frame() %>%
+  mutate(id = row_number()) %>%
+  tidyr::gather(cluster, probability, -id)
+
+ggplot(probabilities, aes(probability)) +
+  geom_histogram() +
+  facet_wrap(~ cluster, nrow = 2)
+```
+
+
+```{r}
+uncertainty <- data.frame(
+  id = 1:nrow(HepC),
+  cluster = HepC_mc$classification,
+  uncertainty = HepC_mc$uncertainty
+)
+
+uncertainty %>%
+  group_by(cluster) %>%
+  filter(uncertainty > 0.01) %>%
+  ggplot(aes(uncertainty, reorder(id, uncertainty))) +
+  geom_point() +
+  facet_wrap(~ cluster, scales = 'free_y', nrow = 1)
+```
+
+
+
+```{r}
+cluster1 <- HepC %>%
+  scale() %>%
+  as.data.frame() %>%
+  mutate(cluster = HepC_mc$classification) %>%
+  filter(cluster == 1) %>%
+  select(-cluster)
+
+cluster1 %>%
+  tidyr::gather(Category, std_count) %>%
+  group_by(Category) %>%
+  summarize(avg = mean(std_count)) %>%
+  ggplot(aes(avg, reorder(Category, avg))) +
+  geom_point() +
+  labs(x = "Average standardized consumption", y = NULL)
+```
+
